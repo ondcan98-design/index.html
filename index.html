@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>101 Okey Puan Takibi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        h2 { text-align: center; margin-bottom: 5px; color: #ff4d4d; }
+        .round-info { text-align: center; color: #aaa; margin-bottom: 15px; font-weight: bold; }
+        
+        .mode-select {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .mode-select select {
+            padding: 8px;
+            border-radius: 6px;
+            background: #1e1e1e;
+            color: #fff;
+            border: 1px solid #444;
+            font-size: 14px;
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 14px;
+        }
+        .input-custom-penalty { width: 55px; text-align: center; border-color: #ff9800 !important; }
+        .player-name { flex: 2; }
+        .player-score { width: 65px; text-align: center; }
+        
+        .btn-penalty {
+            background-color: #e65100;
+            color: white;
+            border: none;
+            padding: 10px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-penalty:hover { background-color: #f57c00; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button.action-btn {
+            flex: 1; padding: 12px; border: none; border-radius: 6px;
+            color: white; font-size: 15px; font-weight: bold; cursor: pointer;
+        }
+        .btn-add { background-color: #ff4d4d; }
+        .btn-add:hover { background-color: #e63939; }
+        .btn-reset { background-color: #555; }
+        .btn-reset:hover { background-color: #444; }
+        .btn-toggle {
+            width: 100%; background-color: #333; margin-top: 20px; border: 1px solid #444;
+            padding: 10px; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+
+        .leaderboard { margin-top: 25px; border-top: 2px solid #333; padding-top: 15px; }
+        .leaderboard-item {
+            display: flex; justify-content: space-between; padding: 10px;
+            margin-bottom: 8px; background-color: #2a2a2a; border-radius: 6px; font-size: 15px;
+        }
+        .rank-1 { border-left: 5px solid #4caf50; font-weight: bold; }
+        .rank-2 { border-left: 5px solid #2196f3; }
+        .rank-3 { border-left: 5px solid #ff9800; }
+        .rank-4 { border-left: 5px solid #f44336; }
+
+        .history-section { display: none; margin-top: 15px; overflow-x: auto; }
+        table.history-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+        table.history-table th, table.history-table td { padding: 8px; border: 1px solid #333; }
+        table.history-table th { background-color: #2a2a2a; color: #ff4d4d; }
+        table.history-table td:first-child { font-weight: bold; color: #aaa; background-color: #222; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>101 Okey Puan Takibi</h2>
+    
+    <div class="mode-select">
+        <label for="game-mode">Oyun Modu: </label>
+        <select id="game-mode" onchange="changeMode()">
+            <option value="4">4 Kişilik (Tekli)</option>
+            <option value="3">3 Kişilik (Tekli)</option>
+            <option value="2">2 Kişilik (Tekli)</option>
+            <option value="team">Takımlı (2v2)</option>
+        </select>
+    </div>
+
+    <div class="round-info" id="round-display">Mevcut Tur: 1 / 10</div>
+
+    <div id="inputs-container"></div>
+
+    <div class="btn-group">
+        <button class="action-btn btn-add" onclick="addRoundScores()">Turu Bitir & Hesapla</button>
+        <button class="action-btn btn-reset" onclick="resetGame()">Oyunu Sıfırla</button>
+    </div>
+
+    <div class="leaderboard">
+        <h3 style="text-align: center; margin-top: 0;">Anlık Genel Sıralama</h3>
+        <div id="results"></div>
+    </div>
+
+    <button class="btn-toggle" onclick="toggleHistory()">Tur Geçmişini Göster / Gizle</button>
+    
+    <div class="history-section" id="history-section">
+        <table class="history-table">
+            <thead>
+                <tr id="history-head"></tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let currentRound = 1;
+    let mode = "4";
+    let activeCount = 4;
+    let totalScores = [];
+    let historyData = [];
+
+    function changeMode() {
+        mode = document.getElementById('game-mode').value;
+        activeCount = (mode === 'team') ? 2 : parseInt(mode);
+        resetGame(false);
+    }
+
+    function initInputs() {
+        const container = document.getElementById('inputs-container');
+        container.innerHTML = '';
+        
+        let defaultNames = [];
+        if (mode === 'team') {
+            defaultNames = ['Takım A (P1+P3)', 'Takım B (P2+P4)'];
+        } else {
+            for (let i = 1; i <= activeCount; i++) defaultNames.push(`Player ${i}`);
+        }
+
+        for (let i = 0; i < activeCount; i++) {
+            container.innerHTML += `
+                <div class="player-row">
+                    <input type="number" class="input-custom-penalty" id="custom-penalty-${i}" value="0" placeholder="Ceza">
+                    <button class="btn-penalty" onclick="addCustomPenalty(${i})">+Ekle</button>
+                    <input type="text" class="player-name" id="name-${i}" value="${defaultNames[i]}" placeholder="Ad / Takım">
+                    <input type="number" class="player-score" id="score-${i}" placeholder="Elde Kalan" value="0">
+                </div>
+            `;
+        }
+    }
+
+    function addCustomPenalty(index) {
+        let penaltyVal = parseInt(document.getElementById(`custom-penalty-${index}`).value) || 0;
+        if (penaltyVal === 0) return;
+
+        totalScores[index] += penaltyVal;
+        if (historyData[currentRound - 1][index] === '-') {
+            historyData[currentRound - 1][index] = penaltyVal;
+        } else {
+            historyData[currentRound - 1][index] += penaltyVal;
+        }
+        
+        // Ceza eklendikten sonra kutuyu tekrar 0 yap
+        document.getElementById(`custom-penalty-${index}`).value = '0';
+        updateUI();
+    }
+
+    function addRoundScores() {
+        if (currentRound > 10) {
+            alert("10 tur tamamlandı! Oyunu sıfırlayabilirsiniz.");
+            return;
+        }
+
+        for (let i = 0; i < activeCount; i++) {
+            let inputScore = parseInt(document.getElementById(`score-${i}`).value) || 0;
+            totalScores[i] += inputScore;
+
+            if (historyData[currentRound - 1][i] === '-') {
+                historyData[currentRound - 1][i] = inputScore;
+            } else {
+                historyData[currentRound - 1][i] += inputScore;
+            }
+
+            document.getElementById(`score-${i}`).value = '0';
+            document.getElementById(`custom-penalty-${i}`).value = '0';
+        }
+
+        currentRound++;
+        updateUI();
+    }
+
+    function updateUI() {
+        if (currentRound <= 10) {
+            document.getElementById('round-display').innerText = `Mevcut Tur: ${currentRound} / 10`;
+        } else {
+            document.getElementById('round-display').innerText = `Oyun Bitti! (10/10)`;
+        }
+
+        let list = [];
+        for (let i = 0; i < activeCount; i++) {
+            let nameVal = document.getElementById(`name-${i}`).value.trim() || `Rakip ${i+1}`;
+            list.push({ name: nameVal, score: totalScores[i] });
+        }
+        list.sort((a, b) => a.score - b.score);
+
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
+        list.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = `leaderboard-item rank-${index + 1}`;
+            div.innerHTML = `<span>${index + 1}. Sıra: <strong>${item.name}</strong></span><span>${item.score} Puan</span>`;
+            resultsContainer.appendChild(div);
+        });
+
+        const historyHead = document.getElementById('history-head');
+        let headHTML = '<th>Tur</th>';
+        for (let i = 0; i < activeCount; i++) {
+            let nameVal = document.getElementById(`name-${i}`).value.trim() || `P${i+1}`;
+            headHTML += `<th>${nameVal}</th>`;
+        }
+        historyHead.innerHTML = headHTML;
+
+        const historyBody = document.getElementById('history-body');
+        historyBody.innerHTML = '';
+        for (let r = 0; r < 10; r++) {
+            const row = document.createElement('tr');
+            let rowHTML = `<td>${r + 1}</td>`;
+            for (let p = 0; p < activeCount; p++) {
+                rowHTML += `<td>${historyData[r][p]}</td>`;
+            }
+            row.innerHTML = rowHTML;
+            historyBody.appendChild(row);
+        }
+    }
+
+    function toggleHistory() {
+        const historyDiv = document.getElementById('history-section');
+        historyDiv.style.display = (historyDiv.style.display === "block") ? "none" : "block";
+    }
+
+    function resetGame(showConfirm = true) {
+        if (!showConfirm || confirm("Tüm puanlar ve tur bilgisi sıfırlanacak. Emin misiniz?")) {
+            currentRound = 1;
+            totalScores = Array(activeCount).fill(0);
+            historyData = Array(10).fill(null).map(() => Array(activeCount).fill('-'));
+            initInputs();
+            updateUI();
+        }
+    }
+
+    initInputs();
+    resetGame(false);
+</script>
+
+</body>
+</html>
